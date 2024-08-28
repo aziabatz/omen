@@ -62,6 +62,10 @@ jobs:
       run: |
         docker load -i /tmp/osdev-omen_latest.tar
 
+    - name: Test make
+      run: |
+        docker run osdev-omen:latest -c "make"    
+
     - name: Setup buildenv
       run: |
         docker run osdev-omen:latest -c "make setup-gpt"
