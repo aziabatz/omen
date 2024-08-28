@@ -21,29 +21,18 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-docker-
 
-    - name: Build the Docker image
-      run: |
-        docker build --cache-from osdev-omen:latest --file Dockerfile --tag osdev-omen:latest .
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-    - name: Save Docker image as a tarball
-      run: |
-        docker save osdev-omen:latest -o osdev-omen_latest.tar
-
-    - name: Upload Docker image artifact
-      uses: actions/upload-artifact@v3
+    - name: Build and push Docker image
+      id: build-and-push
+      uses: docker/build-push-action@v4
       with:
-        name: docker-image
-        path: osdev-omen_latest.tar
-
-    - name: Restore Docker image from artifact
-      uses: actions/download-artifact@v3
-      with:
-        name: docker-image
-        path: /tmp/
-
-    - name: Load Docker image from tarball
-      run: |
-        docker load -i /tmp/osdev-omen_latest.tar
+        context: .
+        push: false
+        tags: "osdev-omen:latest"
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
   omen-build:
     runs-on: ubuntu-latest
@@ -52,24 +41,21 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Download Docker image artifact
-      uses: actions/download-artifact@v3
+    - name: Cache Docker layers
+      uses: actions/cache@v3
       with:
-        name: docker-image
-        path: /tmp/
+        path: /tmp/docker
+        key: ${{ runner.os }}-docker-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-docker-
 
-    - name: Load Docker image from tarball
-      run: |
-        docker load -i /tmp/osdev-omen_latest.tar
-
-    - name: Test make
-      run: |
-        docker run osdev-omen:latest -c "make"    
+    - name: List Docker images
+      run: docker images
 
     - name: Setup buildenv
       run: |
-        docker run osdev-omen:latest -c "make setup-gpt"
-
+        docker run --rm -v ${{ github.workspace }}:/src -w /src osdev-omen:latest make setup-gpt
+  
     - name: Build GPT
       run: |
-        docker run osdev-omen:latest -c "make gpt"
+        docker run --rm -v ${{ github.workspace }}:/src -w /src osdev-omen:latest make gpt
