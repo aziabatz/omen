@@ -53,27 +53,6 @@ RUN tar xvzf gcc-12.2.0.tar.gz \
     && rm -rf gcc-12.2.0 \
     && rm gcc-12.2.0.tar.gz
 
-# Stage 2 image
-FROM ubuntu:latest
-
-LABEL author="aziabatz"
-LABEL version="1.0"
-
-ENV toolchain /toolchain
-ENV code /src
-ENV DEBIAN_FRONTEND=noninteractive
-
-COPY --from=builder ${toolchain} ${toolchain}
-
-RUN apt-get update -qq && apt-get install -y --no-install-recommends \
-    build-essential \
-    nasm \
-    make \
-    gdb \
-    mtools \
-    xorriso \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
 ENV PATH="${toolchain}/bin:${PATH}"
 WORKDIR ${code}
 ENTRYPOINT ["/bin/bash"]
